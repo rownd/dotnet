@@ -1,22 +1,13 @@
-using System.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using IdentityModel.Client;
 using ScottBrady.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Logging;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using System.Text.Json;
 using Org.BouncyCastle.Crypto.Parameters;
-using System.Text;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Security;
-using System.Security.Claims;
-using ScottBrady.IdentityModel.Crypto;
 
-namespace Rownd.Helpers
+namespace Rownd.Core
 {
 
     public class JWKObject
@@ -33,18 +24,18 @@ namespace Rownd.Helpers
         public JWKObject[]? keys { get; set; }
     }
 
-    public class RowndTokens
+    public class AuthClient
     {
         private readonly IMemoryCache _memoryCache;
 
-        public RowndTokens()
+        public AuthClient()
         {
             var cacheOptions = new MemoryCacheOptions();
             _memoryCache = new MemoryCache(cacheOptions);
             IdentityModelEventSource.ShowPII = true;
         }
 
-        public RowndTokens(IMemoryCache memoryCache) => _memoryCache = memoryCache;
+        public AuthClient(IMemoryCache memoryCache) => _memoryCache = memoryCache;
 
         private async Task<List<SecurityKey>> FetchRowndJWKs()
         {
@@ -54,11 +45,14 @@ namespace Rownd.Helpers
                 using (var httpClient = new HttpClient())
                 {
                     var json = await httpClient.GetStringAsync("https://api.us-east-2.dev.rownd.io/hub/auth/keys");
-                    Console.WriteLine(json);
 
                     var keySet = JsonSerializer.Deserialize<JWKSetObject>(json);
 
                     jwks = new List<SecurityKey>();
+                    if (keySet?.keys == null) {
+                        throw new KeyNotFoundException("No keys found in JWKSet. Cannot continue.");
+                    }
+
                     foreach (var jwk in keySet.keys) {
                         if (jwk.alg == "EdDSA") {
                             var jwkBytes = Base64UrlEncoder.DecodeBytes(jwk.x);
