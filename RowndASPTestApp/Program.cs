@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Rownd;
+using Rownd.Helpers;
 using RowndASPTestApp.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +16,15 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddRazorPages();
+
+builder.Services.AddControllersWithViews();
+
+builder.Services.AddSingleton<RowndClient>(sp => {
+    return new RowndClient(builder.Configuration["Rownd:AppKey"], builder.Configuration["Rownd:AppSecret"]);
+});
+
+builder.Services.AddAuthentication(options => options.DefaultScheme = "rownd_auth")
+    .AddScheme<RowndAuthOptions, RowndAuthHandler>("rownd_auth", options => { });
 
 var app = builder.Build();
 

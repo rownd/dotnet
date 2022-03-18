@@ -20,4 +20,8 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.16.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RowndSharedLib\RowndSharedLib.csproj" />
+  </ItemGroup>
+
 </Project>

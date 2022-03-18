@@ -6,6 +6,8 @@ using ScottBrady.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Logging;
 using System.Text.Json;
 using Org.BouncyCastle.Crypto.Parameters;
+using Newtonsoft.Json;
+using Rownd.Models;
 
 namespace Rownd.Core
 {
@@ -27,15 +29,21 @@ namespace Rownd.Core
     public class AuthClient
     {
         private readonly IMemoryCache _memoryCache;
+        private readonly Config _config;
 
-        public AuthClient()
+        public AuthClient(Config config)
         {
+            _config = config;
             var cacheOptions = new MemoryCacheOptions();
             _memoryCache = new MemoryCache(cacheOptions);
             IdentityModelEventSource.ShowPII = true;
         }
 
-        public AuthClient(IMemoryCache memoryCache) => _memoryCache = memoryCache;
+        public AuthClient(Config config, IMemoryCache memoryCache)
+        {
+            _config = config;
+            _memoryCache = memoryCache;
+        }
 
         private async Task<List<SecurityKey>> FetchRowndJWKs()
         {
@@ -44,9 +52,9 @@ namespace Rownd.Core
             {
                 using (var httpClient = new HttpClient())
                 {
-                    var json = await httpClient.GetStringAsync("https://api.us-east-2.dev.rownd.io/hub/auth/keys");
+                    var json = await httpClient.GetStringAsync($"{_config.ApiUrl}/hub/auth/keys");
 
-                    var keySet = JsonSerializer.Deserialize<JWKSetObject>(json);
+                    var keySet = System.Text.Json.JsonSerializer.Deserialize<JWKSetObject>(json);
 
                     jwks = new List<SecurityKey>();
                     if (keySet?.keys == null) {
@@ -58,7 +66,7 @@ namespace Rownd.Core
                             var jwkBytes = Base64UrlEncoder.DecodeBytes(jwk.x);
                             jwks.Add(new EdDsaSecurityKey(new Ed25519PublicKeyParameters(jwkBytes, 0)));
                         } else {
-                            jwks.Add(new JsonWebKey(JsonSerializer.Serialize(jwk)));
+                            jwks.Add(new JsonWebKey(System.Text.Json.JsonSerializer.Serialize(jwk)));
                         }
                     }
 
@@ -71,7 +79,7 @@ namespace Rownd.Core
             return jwks;
         }
 
-        public async Task<SecurityToken> ValidateToken(string token)
+        public async Task<JwtSecurityToken> ValidateToken(string token)
         {
             if (token == null)
             {
@@ -91,7 +99,7 @@ namespace Rownd.Core
                 TryAllIssuerSigningKeys = true,
             }, out SecurityToken validatedToken);
 
-            return validatedToken;
+            return (JwtSecurityToken)validatedToken;
         }
     }
 }

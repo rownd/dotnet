@@ -1,0 +1,28 @@
+using Rownd.Core;
+
+namespace WebApi.Authorization;
+
+public class JwtMiddleware
+{
+    private AuthClient _authClient;
+    private readonly RequestDelegate _next;
+
+    public JwtMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task Invoke(HttpContext context)
+    {
+        var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+        var tokenInfo = AuthClient
+        // var userId = jwtUtils.ValidateToken(token);
+        // if (userId != null)
+        // {
+        //     // attach user to context on successful jwt validation
+        //     context.Items["User"] = userService.GetById(userId.Value);
+        // }
+
+        await _next(context);
+    }
+}
