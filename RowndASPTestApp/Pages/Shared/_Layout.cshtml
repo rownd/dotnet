@@ -48,24 +48,11 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script type="text/javascript">!function () { var e = window._rphConfig = window._rphConfig || []; let t = window.localStorage.getItem("rph_base_url_override") || "https://hub.rownd.io"; e.push(["setBaseUrl", t]); var r = document, s = r.createElement("script"), a = r.getElementsByTagName("script")[0]; s.type = "text/javascript", s.async = !0, s.src = t + "/static/scripts/rph.js", a.parentNode.insertBefore(s, a) }();
         _rphConfig.push(['setAppKey', '9d45c5c2-249c-40e7-9a75-34d10aef9ab6']);
-        _rphConfig.push(['onLoaded', () => {
-            rph.events.addEventListener('auth', (e) => {
-                console.log('auth event:', e);
-
-                fetch('/api/auth/rownd', {
-                    method: 'post',
-                    headers: {
-                        'content-type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        access_token: e.detail.access_token
-                    })
-                })
-                    .then(resp => resp.json)
-                    .then(console.log)
-                    .catch(console.error);
-            });
-        }]);</script>
+        _rphConfig.push(['setPostAuthenticationApi', {
+            method: 'post',
+            url: '/api/auth/rownd'
+        }]);
+        </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

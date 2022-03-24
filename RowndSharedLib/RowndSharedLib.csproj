@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
 		<PackageId>Rownd.Auth</PackageId>
-		<PackageVersion>1.0.0-beta2</PackageVersion>
+		<PackageVersion>1.0.0-beta6</PackageVersion>
 		<Title>Rownd</Title>
 		<Description>Integrate simple, frictionless authentication into your ASP.NET app.</Description>
 		<Authors>Matt Hamann</Authors>

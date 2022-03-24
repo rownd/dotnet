@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Rownd;
 using Rownd.Helpers;
+using Rownd.Models;
 using RowndASPTestApp.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,9 +20,10 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddSingleton<RowndClient>(sp => {
-    return new RowndClient(builder.Configuration["Rownd:AppKey"], builder.Configuration["Rownd:AppSecret"]);
+builder.Services.AddSingleton<Config>(sp => {
+    return new Config(builder.Configuration["Rownd:AppKey"], builder.Configuration["Rownd:AppSecret"]);
 });
+builder.Services.AddSingleton<RowndClient>();
 
 //builder.Services.AddAuthentication(options => options.DefaultScheme = "rownd_auth")
   //  .AddScheme<RowndAuthOptions, RowndAuthHandler>("rownd_auth", options => { });

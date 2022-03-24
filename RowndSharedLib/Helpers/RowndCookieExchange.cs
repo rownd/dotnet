@@ -1,15 +1,17 @@
-﻿using System.Security.Claims;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Rownd;
 using Rownd.Core;
 using Rownd.Models;
 
-namespace RowndSharedLib.Helpers
+namespace Rownd.Helpers
 {
 	public class TokenExchangeResponse
     {
 		public string? message { get; set; }
+		public bool should_refresh_page { get; set; } = false;
 
 		public TokenExchangeResponse(string msg)
         {
@@ -23,20 +25,37 @@ namespace RowndSharedLib.Helpers
     }
 
 	[ApiController]
-	public class RowndCookieExchange : ControllerBase
+	public abstract class RowndCookieExchange : ControllerBase
 	{
 		private RowndClient _rowndClient { get; set; }
+		private ILogger _logger;
 
-		public RowndCookieExchange(RowndClient client)
+		protected bool _addNewUsersToDatabase { get; set; } = false;
+
+		protected UserManager<IdentityUser>? _userManager { get; set; }
+
+		public RowndCookieExchange(RowndClient client, ILogger<RowndCookieExchange> logger)
 		{
 			_rowndClient = client;
+			_logger = logger;
 		}
 
 		[Consumes("application/json")]
 		[HttpPost]
 		public async Task<IActionResult> OnPostAsync([FromBody] TokenExchangeRequest tokenReq)
         {
-			var tokenInfo = await _rowndClient.Auth.ValidateToken(tokenReq.access_token);
+			if (tokenReq.access_token == null) {
+				return Unauthorized();
+			}
+
+			JwtSecurityToken tokenInfo;
+			try {
+				tokenInfo = await _rowndClient.Auth.ValidateToken(tokenReq.access_token);
+			} catch (Exception e) {
+				_logger.LogError(e, "Failed to validate token");
+				return Unauthorized();
+			}
+
 			var jwtPayload = tokenInfo.Payload;
 
 			var authProperties = new AuthenticationProperties
@@ -47,6 +66,9 @@ namespace RowndSharedLib.Helpers
 
             string appUserId = jwtPayload["https://auth.rownd.io/app_user_id"] as string;
 			IList<string> audiences = jwtPayload.Aud;
+
+			_logger.LogDebug($"Rownd appUserId: {appUserId}");
+			_logger.LogDebug($"Rownd token audiences: {jwtPayload.Aud}");
 
 			ClaimsIdentity identity;
             // Can't proceed if audiences is null
@@ -85,6 +107,7 @@ namespace RowndSharedLib.Helpers
                     }
                 }
 
+				_logger.LogDebug($"Signing in with identity: {String.Join(", ", profileClaims)} claims");
 				identity = new ClaimsIdentity(profileClaims, "Identity.Application");
 			}
 			else
@@ -92,13 +115,26 @@ namespace RowndSharedLib.Helpers
 				identity = new ClaimsIdentity(jwtPayload.Claims, "Identity.Application");
             }
 
+			var response = new TokenExchangeResponse("Authentication successful");
+			if (User?.Identity == null || !User.Identity.IsAuthenticated) {
+				response.should_refresh_page = true;
+			}
+
 			await HttpContext.SignInAsync(
 				"Identity.Application",
 				new ClaimsPrincipal(identity),
 				authProperties
 			);
 
-			return Ok(new TokenExchangeResponse("Authentication successful"));
+			if (_addNewUsersToDatabase && _userManager != null) {
+				_logger.LogDebug("usermanager:", _userManager.ToString());
+				var existingUser = _userManager.Users.FirstOrDefault(u => u.Id == User.Identity.Name);
+				if (existingUser == null) {
+					await _userManager.CreateAsync(new IdentityUser(identity.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value), "id");
+				}
+			}
+
+			return Ok(response);
 		}
 	}
 }

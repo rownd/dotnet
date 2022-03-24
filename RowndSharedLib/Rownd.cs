@@ -1,4 +1,5 @@
 using Rownd.Core;
+using Rownd.Helpers;
 using Rownd.Models;
 
 namespace Rownd {
@@ -7,32 +8,20 @@ namespace Rownd {
         public readonly Config Config;
         public readonly AuthClient Auth;
 
-        public RowndClient(Config config, AuthClient authClient) {
+        public RowndClient(Config config, ILogger<RowndClient> logger) {
             Config = config;
-            Auth = authClient;
+            Auth = new AuthClient(Config);
         }
 
-        public RowndClient(string appKey, string appSecret)
+        public RowndClient(string appKey, string appSecret, ILogger<RowndClient> logger)
         {
             Config = new Config(appKey, appSecret);
             Auth = new AuthClient(Config);
         }
 
-        public RowndClient() {
+        public RowndClient(ILogger<RowndClient> logger) {
             Config = new Config();
             Auth = new AuthClient(Config);
         }
-
-        public async Task Authenticate() {
-
-        }
-
-        // public async Task<RowndUser> GetUser(string token) {
-        //     var user = await authClient.ValidateToken(token);
-        //     return new RowndUser {
-        //         id = user.Id,
-        //         data = user.Data
-        //     };
-        // }
     }
 }
