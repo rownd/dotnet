@@ -72,48 +72,46 @@ namespace Rownd.Helpers
 
 			ClaimsIdentity identity;
             // Can't proceed if audiences is null
-            if (appUserId != null && jwtPayload.Aud != null)
+            if (appUserId == null || jwtPayload.Aud == null)
             {
-                var appId = Array.Find<string>(audiences.ToArray<string>(), audience => audience.StartsWith("app:"));
-
-                if (appId != null)
-                {
-                    appId = appId.Split("app:")[1];
-                }
-
-                // Map Rownd user profile fields to Identity Framework claims
-                var userProfile = new UserProfile(appId, appUserId, _rowndClient.Config);
-
-				RowndUser profile;
-				try
-				{
-					profile = await userProfile.GetProfile();
-				}
-				catch (HttpRequestException e)
-                {
-					return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
-                }
-
-				var profileClaims = new List<Claim>()
-				{
-					new Claim(ClaimTypes.NameIdentifier, appUserId),
-                };
-
-                foreach (KeyValuePair<string, string> entry in _rowndClient.Config.IdentityClaimTypeMap)
-                {
-                    if (profile?.data?.ContainsKey(entry.Value) ?? false)
-                    {
-                        profileClaims.Add(new Claim(entry.Key, profile?.data[entry.Value].ToString()));
-                    }
-                }
-
-				_logger.LogDebug($"Signing in with identity: {String.Join(", ", profileClaims)} claims");
-				identity = new ClaimsIdentity(profileClaims, "Identity.Application");
+				return Unauthorized("The provided token did not contain the required information: missing app_user_id or audience.");
 			}
-			else
-            {
-				identity = new ClaimsIdentity(jwtPayload.Claims, "Identity.Application");
-            }
+                
+			var appId = Array.Find<string>(audiences.ToArray<string>(), audience => audience.StartsWith("app:"));
+
+			if (appId != null)
+			{
+				appId = appId.Split("app:")[1];
+			}
+
+			// Map Rownd user profile fields to Identity Framework claims
+			var userProfile = new UserProfile(appId, appUserId, _rowndClient.Config);
+
+			RowndUser profile;
+			try
+			{
+				profile = await userProfile.GetProfile();
+			}
+			catch (HttpRequestException e)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
+			}
+
+			var profileClaims = new List<Claim>()
+			{
+				new Claim(ClaimTypes.NameIdentifier, appUserId),
+			};
+
+			foreach (KeyValuePair<string, string> entry in _rowndClient.Config.IdentityClaimTypeMap)
+			{
+				if (profile?.data?.ContainsKey(entry.Value) ?? false)
+				{
+					profileClaims.Add(new Claim(entry.Key, profile?.data[entry.Value].ToString()));
+				}
+			}
+
+			_logger.LogDebug($"Signing in with identity: {String.Join(", ", profileClaims)} claims");
+			identity = new ClaimsIdentity(profileClaims, "Identity.Application");
 
 			var response = new TokenExchangeResponse("Authentication successful");
 			if (User?.Identity == null || !User.Identity.IsAuthenticated) {
@@ -127,10 +125,20 @@ namespace Rownd.Helpers
 			);
 
 			if (_addNewUsersToDatabase && _userManager != null) {
-				_logger.LogDebug("usermanager:", _userManager.ToString());
-				var existingUser = _userManager.Users.FirstOrDefault(u => u.Id == User.Identity.Name);
+				var existingUser = await _userManager.FindByIdAsync(appUserId);
 				if (existingUser == null) {
-					await _userManager.CreateAsync(new IdentityUser(identity.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value), "id");
+					var newUser = new IdentityUser() {
+						Id = appUserId,
+						UserName = appUserId,
+						Email = (profile?.data?.ContainsKey("email") ?? false) ? profile.data["email"].ToString() : null,
+						PhoneNumber = (profile?.data?.ContainsKey("phone_number") ?? false) ? profile.data["phone_number"].ToString() : null,
+					};
+					var result = await _userManager.CreateAsync(newUser);
+
+					if (!result.Succeeded)
+                    {
+						_logger.LogError("failed to create a new user:", result.Errors);
+                    }
 				}
 			}
 
