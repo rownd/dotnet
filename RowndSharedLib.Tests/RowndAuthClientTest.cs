@@ -4,16 +4,26 @@ using Microsoft.IdentityModel.Tokens;
 using System.Threading.Tasks;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using Rownd.Models;
 
 namespace RowndSharedLib.Tests
 {
 
     public class RowndAuthClientTest
     {
+
+        Config _config;
+
+        public RowndAuthClientTest()
+        {
+            _config = new Config("49f4c15a-956a-4293-9e3f-f9746f02dd1e", "3036e37a952d6a6bea5a1d4487d224e820dda371e7684a50");
+            _config.ApiUrl = "https://api.us-east-2.dev.rownd.io";
+        }
+
         [Fact]
         public async Task RejectProperlySignedButExpiredJwt()
         {
-            var rownd = new AuthClient();
+            var rownd = new AuthClient(_config);
 
             try
             {
@@ -30,7 +40,7 @@ namespace RowndSharedLib.Tests
         [Fact]
         public async Task RejectImproperlySignedJwt()
         {
-            var rownd = new AuthClient();
+            var rownd = new AuthClient(_config);
             try
             {
                 await rownd.ValidateToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
