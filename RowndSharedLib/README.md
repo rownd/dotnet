@@ -9,13 +9,13 @@ you can also leverage token validation and
 
 From NuGet:
 ```bash
-dotnet add package Rownd --prerelease
+dotnet add package Rownd
 ```
 
 ## Supported versions
 
 - .NET 6.x
-- _Need a different version? [Let us know!](https://github.com/rownd/dotnet/issues/new?title=Request support for .NET X.X)_
+- _Need a different version? [Let us know!](https://github.com/rownd/dotnet/issues/new?title=Request%20support%20for%20.NET%20X.X)_
 
 ## Usage
 
@@ -83,6 +83,14 @@ namespace MyAppNamespace.Controllers
     [Route("/api/auth/rownd")]
     public class RowndAuthController : RowndCookieExchange
     {
+        // OPTIONAL
+        protected override async Task IsAllowedToSignIn(RowndUser rowndUser) {
+            // Run any custom logic here to ensure this user should be allowed to sign in. May be async.
+
+            // return; // if everything is fine
+
+            // throw new Exception("You aren't allowed here!"); // if you want to prevent the user from signing in
+        }
 
         public RowndAuthController(RowndClient client, ILogger<RowndAuthController> logger, UserManager<IdentityUser> userManager) : base(client, logger)
         {
@@ -109,6 +117,11 @@ Let's examine what's happening in the above code:
    If you want Rownd to add users to your database, you'll need to set this to `true`.
    Likewise, `_userManager` is a base class instance variable and is set to `null` by default. Be sure to populate this with the UserManager injected dependency
    if `_addNewUsersToDatabase` is `true`.
+
+5. Optionally, we can override the async, virtual method `IsAllowedToSignIn()` to run custom logic identifying whether the current user
+   should be able to establish an authenticated session. This might mean checking a prerequisite in another system or simply checking an
+   attribute on the user's Rownd profile. If this method throws an exception, the sign-in process will stop before the session is established
+    and a 403 Forbidden response will be returned. The body will contain a `message` property with the exception message.
 
 Finally, we need to install the Rownd Hub and instruct it to call our controller API when the page loads.
 
