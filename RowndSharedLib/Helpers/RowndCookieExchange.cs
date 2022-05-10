@@ -34,6 +34,10 @@ namespace Rownd.Helpers
 
 		protected UserManager<IdentityUser>? _userManager { get; set; }
 
+		protected virtual async Task IsAllowedToSignIn(RowndUser rowndUser) {
+			return;
+		}
+
 		public RowndCookieExchange(RowndClient client, ILogger<RowndCookieExchange> logger)
 		{
 			_rowndClient = client;
@@ -108,6 +112,13 @@ namespace Rownd.Helpers
 				{
 					profileClaims.Add(new Claim(entry.Key, profile?.data[entry.Value].ToString()));
 				}
+			}
+
+			try {
+				await IsAllowedToSignIn(profile);
+			} catch(Exception e) {
+				_logger.LogDebug($"User {appUserId} was prevented from signing in. Reason: {e.Message}");
+				return StatusCode(StatusCodes.Status403Forbidden, "You are not permitted to sign in: " + e.Message);
 			}
 
 			_logger.LogDebug($"Signing in with identity: {String.Join(", ", profileClaims)} claims");
