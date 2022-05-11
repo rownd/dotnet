@@ -1,8 +1,6 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Rownd;
-using Rownd.Helpers;
 using Rownd.Models;
 using RowndASPTestApp.Data;
 

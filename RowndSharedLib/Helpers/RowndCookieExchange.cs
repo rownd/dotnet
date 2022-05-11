@@ -117,7 +117,7 @@ namespace Rownd.Helpers
 			try {
 				await IsAllowedToSignIn(profile);
 			} catch(Exception e) {
-				_logger.LogDebug($"User {appUserId} was prevented from signing in. Reason: {e.Message}");
+				_logger.LogDebug($"User {appUserId} was prevented from signing in. Reason: {e.Message} {e.StackTrace}");
 				return StatusCode(StatusCodes.Status403Forbidden, "You are not permitted to sign in: " + e.Message);
 			}
 
