@@ -84,7 +84,7 @@ namespace MyAppNamespace.Controllers
     {
         // OPTIONAL
         protected override async Task IsAllowedToSignIn(RowndUser rowndUser) {
-            // Run any custom logic here to ensure this user should be allowed to sign in. May be async.
+            // Run any custom logic here to ensure this user should be allowed to sign in.
 
             // return; // if everything is fine
 
@@ -93,8 +93,11 @@ namespace MyAppNamespace.Controllers
 
         public RowndAuthController(RowndClient client, ILogger<RowndAuthController> logger, UserManager<IdentityUser> userManager) : base(client, logger)
         {
-            _addNewUsersToDatabase = true;  // If you want Rownd to add users to your own database when they're first authenticated, set this to `true`
-            _userManager = userManager; // When `_addNewUsersToDatabase` is `true`, you'll need to pass in a reference to your UserManager
+            _userManager = userManager; // If provided, Rownd will attempt to match the incoming user with an existing user in the database.
+            _addNewUsersToDatabase = true;  // If you want Rownd to add new users to the database when they're first authenticated, set this to `true` (requires `_userManager`)
+            
+            _defaultAuthenticationScheme = IdentityConstants.ApplicationScheme;  // Sets the authentication scheme (default: `IdentityConstants.ApplicationScheme`)
+            _signOutRedirectUrl = "/";  // Where to redirect the user after signing out (default: "/")
             
         }
     }
