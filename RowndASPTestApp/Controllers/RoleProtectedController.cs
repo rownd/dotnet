@@ -10,8 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace RowndASPTestApp.Controllers
 {
-    [Authorize]
-    public class ProtectedController : Controller
+    [Authorize(Roles = "admin")]
+    public class RoleProtectedController : Controller
     {
         // GET: /<controller>/
         public IActionResult Index()

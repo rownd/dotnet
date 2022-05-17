@@ -1,4 +1,8 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -25,6 +29,19 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="/Protected">Protected page</a>
+                            </li>
+
+                            if (User.IsInRole("admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="/RoleProtected">Role-protected page</a>
+                                </li>
+                            }
+                        }
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>
@@ -52,7 +69,11 @@
             method: 'post',
             url: '/api/auth/rownd'
         }]);
-        </script>
+        _rphConfig.push(['setPostSignOutApi', {
+            method: 'delete',
+            url: '/api/auth/rownd'
+        }]);
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

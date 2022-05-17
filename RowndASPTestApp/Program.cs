@@ -8,11 +8,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(options => {
+    options.UseSqlite(connectionString);
+    options.EnableSensitiveDataLogging();
+});
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddRazorPages();
 
@@ -52,5 +55,28 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
+
+using (var scope = app.Services.CreateScope())
+{
+
+    ApplicationDbContext _db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    UserManager<IdentityUser> _userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    RoleManager<IdentityRole> _roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    // Seed Roles
+    List<IdentityRole> roles = new()
+    {
+        new IdentityRole("admin"),
+        new IdentityRole("client")
+    };
+
+    foreach (IdentityRole role in roles)
+    {
+        if (!_db.Roles.Contains(role))
+        {
+            await _roleManager.CreateAsync(role);
+        }
+    }
+}
 
 app.Run();

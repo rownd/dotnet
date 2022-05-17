@@ -1,33 +1,78 @@
-﻿<!DOCTYPE html>
-<html>
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>@ViewData["Title"]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RowndASPTestApp</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/RowndASPTestApp.styles.css" asp-append-version="true" />
 </head>
 <body>
-    @RenderBody()
-    <script type="text/javascript">
-        !function () { var e = window._rphConfig = window._rphConfig || []; let t = window.localStorage.getItem("rph_base_url_override") || "https://hub.rownd.io"; e.push(["setBaseUrl", t]); var r = document, s = r.createElement("script"), a = r.getElementsByTagName("script")[0]; s.type = "text/javascript", s.async = !0, s.src = t + "/static/scripts/rph.js", a.parentNode.insertBefore(s, a) }();
-        _rphConfig.push(['setAppKey', '9d45c5c2-249c-40e7-9a75-34d10aef9ab6']);
-        _rphConfig.push(['onLoaded', () => {
-            rph.events.addEventListener('auth', (e) => {
-                console.log('auth event:', e);
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-page="/Index">RowndASPTestApp</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
+                        </li>
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="/Protected">Protected page</a>
+                            </li>
 
-                fetch('/api/auth/rownd', {
-                    method: 'post',
-                    headers: {
-                        'content-type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        access_token: e.detail.access_token
-                    })
-                })
-                    .then(resp => resp.json)
-                    .then(console.log)
-                    .catch(console.error);
-            });
+                            if (User.IsInRole("admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="/RoleProtected">Role-protected page</a>
+                                </li>
+                            }
+                        }
+                    </ul>
+                    <partial name="_LoginPartial" />
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2022 - RowndASPTestApp - <a asp-area="" asp-page="/Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script type="text/javascript">!function () { var e = window._rphConfig = window._rphConfig || []; let t = window.localStorage.getItem("rph_base_url_override") || "https://hub.rownd.io"; e.push(["setBaseUrl", t]); var r = document, s = r.createElement("script"), a = r.getElementsByTagName("script")[0]; s.type = "text/javascript", s.async = !0, s.src = t + "/static/scripts/rph.js", a.parentNode.insertBefore(s, a) }();
+        _rphConfig.push(['setAppKey', '9d45c5c2-249c-40e7-9a75-34d10aef9ab6']);
+        _rphConfig.push(['setPostAuthenticationApi', {
+            method: 'post',
+            url: '/api/auth/rownd'
         }]);
-    </script>
+        _rphConfig.push(['setPostSignOutApi', {
+            method: 'delete',
+            url: '/api/auth/rownd'
+        }]);</script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

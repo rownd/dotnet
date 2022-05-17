@@ -14,6 +14,7 @@
     <None Remove="Views\Protected\" />
     <None Remove="Views\Shared\" />
     <None Remove="Models\" />
+    <None Remove="Views\Protected %28copy%29\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
@@ -39,5 +40,6 @@
     <Folder Include="Views\Protected\" />
     <Folder Include="Views\Shared\" />
     <Folder Include="Models\" />
+    <Folder Include="Views\Protected %28copy%29\" />
   </ItemGroup>
 </Project>

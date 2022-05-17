@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,153 +9,224 @@ using Rownd.Models;
 
 namespace Rownd.Helpers
 {
-	public class TokenExchangeResponse
+    public class TokenExchangeResponse
     {
-		public string? message { get; set; }
-		public bool should_refresh_page { get; set; } = false;
+        [JsonPropertyName("message")]
+        public string? Message { get; set; }
 
-		public TokenExchangeResponse(string msg)
+        [JsonPropertyName("should_refresh_page")]
+        public bool ShouldRefreshPage { get; set; } = false;
+
+        public TokenExchangeResponse(string msg)
         {
-			message = msg;
+            Message = msg;
         }
     }
 
-	public class TokenExchangeRequest
+    public class SignOutResponse
     {
-		public string? access_token { get; set; }
+        [JsonPropertyName("return_to")]
+        public string? ReturnTo { get; set; }
     }
 
-	[ApiController]
-	public abstract class RowndCookieExchange : ControllerBase
-	{
-		private RowndClient _rowndClient { get; set; }
-		private ILogger _logger;
+    public class TokenExchangeRequest
+    {
+        [JsonPropertyName("access_token")]
+        public string? AccessToken { get; set; }
+    }
 
-		protected bool _addNewUsersToDatabase { get; set; } = false;
+    [ApiController]
+    public abstract class RowndCookieExchange : ControllerBase
+    {
+        private RowndClient _rowndClient { get; set; }
+        private ILogger _logger;
 
-		protected UserManager<IdentityUser>? _userManager { get; set; }
+        protected string _signOutRedirectUrl { get; set; } = "/";
+        protected string _defaultAuthenticationScheme { get; set; } = IdentityConstants.ApplicationScheme;
 
-		protected virtual async Task IsAllowedToSignIn(RowndUser rowndUser) {
-			return;
-		}
+        protected bool _addNewUsersToDatabase { get; set; } = true;
+        protected UserManager<IdentityUser>? _userManager { get; set; }
 
-		public RowndCookieExchange(RowndClient client, ILogger<RowndCookieExchange> logger)
-		{
-			_rowndClient = client;
-			_logger = logger;
-		}
-
-		[Consumes("application/json")]
-		[HttpPost]
-		public async Task<IActionResult> OnPostAsync([FromBody] TokenExchangeRequest tokenReq)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        protected virtual async Task IsAllowedToSignIn(RowndUser rowndUser)
         {
-			if (tokenReq.access_token == null) {
-				return Unauthorized();
-			}
+            return;
+        }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 
-			JwtSecurityToken tokenInfo;
-			try {
-				tokenInfo = await _rowndClient.Auth.ValidateToken(tokenReq.access_token);
-			} catch (Exception e) {
-				_logger.LogError(e, "Failed to validate token");
-				return Unauthorized();
-			}
+        public RowndCookieExchange(RowndClient client, ILogger<RowndCookieExchange> logger)
+        {
+            _rowndClient = client;
+            _logger = logger;
+        }
 
-			var jwtPayload = tokenInfo.Payload;
+        /**
+         * Sign in a user via their Rownd access token
+         * Creates a .NET Identity session
+         **/
+        [Consumes("application/json")]
+        [HttpPost]
+        public async Task<IActionResult> OnPostAsync([FromBody] TokenExchangeRequest tokenReq)
+        {
+            if (tokenReq.AccessToken == null)
+            {
+                return Unauthorized();
+            }
 
-			var authProperties = new AuthenticationProperties
-			{
-				IsPersistent = true
-			};
+            JwtSecurityToken tokenInfo;
+            try
+            {
+                tokenInfo = await _rowndClient.Auth.ValidateToken(tokenReq.AccessToken);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to validate token");
+                return Unauthorized();
+            }
+
+            var jwtPayload = tokenInfo.Payload;
+
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true
+            };
 
 
             string appUserId = jwtPayload["https://auth.rownd.io/app_user_id"] as string;
-			IList<string> audiences = jwtPayload.Aud;
+            IList<string> audiences = jwtPayload.Aud;
 
-			_logger.LogDebug($"Rownd appUserId: {appUserId}");
-			_logger.LogDebug($"Rownd token audiences: {jwtPayload.Aud}");
+            _logger.LogDebug($"Rownd appUserId: {appUserId}");
+            _logger.LogDebug($"Rownd token audiences: {jwtPayload.Aud}");
 
-			ClaimsIdentity identity;
             // Can't proceed if audiences is null
             if (appUserId == null || jwtPayload.Aud == null)
             {
-				return Unauthorized("The provided token did not contain the required information: missing app_user_id or audience.");
-			}
-                
-			var appId = Array.Find<string>(audiences.ToArray<string>(), audience => audience.StartsWith("app:"));
+                return Unauthorized("The provided token did not contain the required information: missing app_user_id or audience.");
+            }
 
-			if (appId != null)
-			{
-				appId = appId.Split("app:")[1];
-			}
+            var appId = Array.Find<string>(audiences.ToArray<string>(), audience => audience.StartsWith("app:"));
 
-			// Map Rownd user profile fields to Identity Framework claims
-			var userProfile = new UserProfile(appId, appUserId, _rowndClient.Config);
+            if (appId != null)
+            {
+                appId = appId.Split("app:")[1];
+            }
 
-			RowndUser profile;
-			try
-			{
-				profile = await userProfile.GetProfile();
-			}
-			catch (HttpRequestException e)
-			{
-				return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
-			}
+            // Map Rownd user profile fields to Identity Framework claims
+            var userProfile = new UserProfile(appId, appUserId, _rowndClient.Config);
 
-			var profileClaims = new List<Claim>()
-			{
-				new Claim(ClaimTypes.NameIdentifier, appUserId),
-			};
+            RowndUser profile;
+            try
+            {
+                profile = await userProfile.GetProfile();
+            }
+            catch (HttpRequestException e)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
+            }
 
-			foreach (KeyValuePair<string, string> entry in _rowndClient.Config.IdentityClaimTypeMap)
-			{
-				if (profile?.data?.ContainsKey(entry.Value) ?? false)
-				{
-					profileClaims.Add(new Claim(entry.Key, profile?.data[entry.Value].ToString()));
-				}
-			}
+            var profileClaims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.NameIdentifier, appUserId),
+                new Claim("Id", appUserId),
+            };
 
-			try {
-				await IsAllowedToSignIn(profile);
-			} catch(Exception e) {
-				_logger.LogDebug($"User {appUserId} was prevented from signing in. Reason: {e.Message} {e.StackTrace}");
-				return StatusCode(StatusCodes.Status403Forbidden, "You are not permitted to sign in: " + e.Message);
-			}
+            foreach (KeyValuePair<string, string> entry in _rowndClient.Config.IdentityClaimTypeMap)
+            {
+                if (profile?.data?.ContainsKey(entry.Value) ?? false)
+                {
+                    profileClaims.Add(new Claim(entry.Key, profile?.data[entry.Value].ToString()));
+                }
+            }
 
-			_logger.LogDebug($"Signing in with identity: {String.Join(", ", profileClaims)} claims");
-			identity = new ClaimsIdentity(profileClaims, "Identity.Application");
+            try
+            {
+                await IsAllowedToSignIn(profile);
+            }
+            catch (Exception e)
+            {
+                _logger.LogDebug($"User {appUserId} was prevented from signing in. Reason: {e.Message} {e.StackTrace}");
+                return StatusCode(StatusCodes.Status403Forbidden, "You are not permitted to sign in: " + e.Message);
+            }
 
-			var response = new TokenExchangeResponse("Authentication successful");
-			if (User?.Identity == null || !User.Identity.IsAuthenticated) {
-				response.should_refresh_page = true;
-			}
+            TokenExchangeResponse response;
+            if (User?.Identity == null || !User.Identity.IsAuthenticated)
+            {
+                response = new TokenExchangeResponse("Authentication successful");
+                response.ShouldRefreshPage = true;
+            }
+            else
+            {
+                response = new TokenExchangeResponse("Already authenticated");
+                return Ok(response);
+            }
 
-			await HttpContext.SignInAsync(
-				"Identity.Application",
-				new ClaimsPrincipal(identity),
-				authProperties
-			);
-
-			if (_addNewUsersToDatabase && _userManager != null) {
-				var existingUser = await _userManager.FindByIdAsync(appUserId);
-				if (existingUser == null) {
-					var newUser = new IdentityUser() {
-						Id = appUserId,
-						UserName = appUserId,
-						Email = (profile?.data?.ContainsKey("email") ?? false) ? profile.data["email"].ToString() : null,
-						PhoneNumber = (profile?.data?.ContainsKey("phone_number") ?? false) ? profile.data["phone_number"].ToString() : null,
-					};
-					var result = await _userManager.CreateAsync(newUser);
-
-					if (!result.Succeeded)
+            IdentityUser user;
+            if (_userManager != null)
+            {
+                user = await _userManager.FindByIdAsync(appUserId);
+                if (_addNewUsersToDatabase && user == null)
+                {
+                    user = new IdentityUser()
                     {
-						_logger.LogError("failed to create a new user:", result.Errors);
-                    }
-				}
-			}
+                        Id = appUserId,
+                        UserName = appUserId,
+                        Email = (profile?.data?.ContainsKey("email") ?? false) ? profile.data["email"].ToString() : null,
+                        PhoneNumber = (profile?.data?.ContainsKey("phone_number") ?? false) ? profile.data["phone_number"].ToString() : null,
+                    };
+                    var result = await _userManager.CreateAsync(user);
 
-			return Ok(response);
-		}
-	}
+                    if (!result.Succeeded)
+                    {
+                        _logger.LogError("failed to create a new user:", result.Errors);
+                    }
+                }
+
+                if (user != null)
+                {
+                    var userRoles = await _userManager.GetRolesAsync(user);
+                    foreach (string role in userRoles)
+                    {
+                        profileClaims.Add(new Claim(ClaimTypes.Role, role));
+                    }
+                }
+            }
+
+            _logger.LogDebug($"Signing in user (claims: {string.Join(", ", profileClaims)})");
+            ClaimsIdentity identity = new(profileClaims, _defaultAuthenticationScheme);
+
+            await HttpContext.SignInAsync(
+                _defaultAuthenticationScheme,
+                new ClaimsPrincipal(identity),
+                authProperties
+            );
+
+            return Ok(response);
+        }
+
+        /**
+         * Sign out the current user
+         **/
+        [Consumes("application/json")]
+        [HttpDelete]
+        public async Task<IActionResult> OnDeleteAsync()
+        {
+            var authProperties = new AuthenticationProperties()
+            {
+                RedirectUri = _signOutRedirectUrl
+            };
+
+            await HttpContext.SignOutAsync(
+                _defaultAuthenticationScheme,
+                authProperties
+            );
+
+            var response = new SignOutResponse
+            {
+                ReturnTo = _signOutRedirectUrl
+            };
+
+            return Ok(response);
+        }
+    }
 }
 

@@ -1,10 +1,10 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @{
-    ViewData["Title"] = "Protected page";
+    ViewData["Title"] = "Role-protected page";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div>
-    <p>This page is protected by Rownd!</p>
+    <p>Hooray! You have the correct roles!</p>
     <p>Your roles: @ViewBag.Roles</p>
 </div>
