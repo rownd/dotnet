@@ -43,8 +43,7 @@ export ROWND_APP_SECRET="..."
 ```
 
 ### Inject Rownd into your application
-
-For the purposes of getting set up quickly, we'll assume you added the app key and secret to your `appsettings.json` file as shown above.
+To get set up quickly, we'll assume you added the app key and secret to your `appsettings.json` file as shown above.
 
 Next, add the following to your `Program.cs` file before the `builder.build()` statement:
 
@@ -128,10 +127,14 @@ Finally, we need to install the Rownd Hub and instruct it to call our controller
 1. Follow [these instructions](https://docs.rownd.io/rownd/sdk-reference/web/javascript-browser) to install the Rownd Hub. You'll want to ensure it runs
    on every page of your application, so be sure to add it as a common script or drop it directly into your layout.
 
-2. Add the following script just below the Rownd Hub script:
+2. Add the following script just below the Rownd Hub script to handle :
    ```js
     _rphConfig.push(['setPostAuthenticationApi', {
         method: 'post',
+        url: '/api/auth/rownd'  // Replace this with the route you specified in the controller
+    }]);
+    _rphConfig.push(['setPostSignOutApi', {
+        method: 'delete',
         url: '/api/auth/rownd'  // Replace this with the route you specified in the controller
     }]);
    ```
