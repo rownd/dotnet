@@ -15,6 +15,8 @@ namespace Rownd.Models {
             { ClaimTypes.Name, "first_name" }
         };
 
+        public bool IsDebugModeEnabled { get; set; } = false;
+
         public Config() {
             AppKey = Environment.GetEnvironmentVariable("ROWND_APP_KEY");
             AppSecret = Environment.GetEnvironmentVariable("ROWND_APP_SECRET");
@@ -23,6 +25,7 @@ namespace Rownd.Models {
                 throw new Exception("Missing environment variables: ROWND_APP_KEY and ROWND_APP_SECRET. Ensure they are set or pass them directly via new Config(appKey, appSecret).");
             }
         }
+
         public Config(string appKey, string appSecret) {
             AppKey = appKey;
             AppSecret = appSecret;

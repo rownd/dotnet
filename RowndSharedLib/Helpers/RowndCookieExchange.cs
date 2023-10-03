@@ -48,7 +48,12 @@ namespace Rownd.Helpers
         protected UserManager<IdentityUser>? _userManager { get; set; }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        protected virtual async Task IsAllowedToSignIn(RowndUser rowndUser)
+        protected virtual async Task IsAllowedToSignIn(RowndUserProfile rowndUser, Dictionary<string, dynamic> signInContext)
+        {
+            return;
+        }
+
+        protected virtual async Task OnSuccessfulSignIn(RowndUserProfile? rowndUser, IdentityUser? user, Dictionary<string, dynamic> signInContext)
         {
             return;
         }
@@ -104,7 +109,7 @@ namespace Rownd.Helpers
                 return Unauthorized("The provided token did not contain the required information: missing app_user_id or audience.");
             }
 
-            var appId = Array.Find<string>(audiences.ToArray<string>(), audience => audience.StartsWith("app:"));
+            var appId = Array.Find(audiences.ToArray(), audience => audience.StartsWith("app:"));
 
             if (appId != null)
             {
@@ -112,12 +117,12 @@ namespace Rownd.Helpers
             }
 
             // Map Rownd user profile fields to Identity Framework claims
-            var userProfile = new UserProfile(appId, appUserId, _rowndClient.Config);
+            var userProfile = new UserClient(_rowndClient);
 
-            RowndUser profile;
+            RowndUserProfile profile;
             try
             {
-                profile = await userProfile.GetProfile();
+                profile = await userProfile.GetProfile(appUserId);
             }
             catch (HttpRequestException e)
             {
@@ -126,21 +131,22 @@ namespace Rownd.Helpers
 
             var profileClaims = new List<Claim>()
             {
-                new Claim(ClaimTypes.NameIdentifier, appUserId),
-                new Claim("Id", appUserId),
+                new(ClaimTypes.NameIdentifier, appUserId),
+                new("Id", appUserId),
             };
 
             foreach (KeyValuePair<string, string> entry in _rowndClient.Config.IdentityClaimTypeMap)
             {
-                if (profile?.data?.ContainsKey(entry.Value) ?? false)
+                if (profile?.Data?.ContainsKey(entry.Value) ?? false)
                 {
-                    profileClaims.Add(new Claim(entry.Key, profile?.data[entry.Value].ToString()));
+                    profileClaims.Add(new Claim(entry.Key, profile?.Data[entry.Value].ToString()));
                 }
             }
 
+            Dictionary<string, dynamic>? signInContext = new();
             try
             {
-                await IsAllowedToSignIn(profile);
+                await IsAllowedToSignIn(profile, signInContext);
             }
             catch (Exception e)
             {
@@ -160,7 +166,7 @@ namespace Rownd.Helpers
                 return Ok(response);
             }
 
-            IdentityUser user;
+            IdentityUser? user = null;
             if (_userManager != null)
             {
                 user = await _userManager.FindByIdAsync(appUserId);
@@ -170,8 +176,8 @@ namespace Rownd.Helpers
                     {
                         Id = appUserId,
                         UserName = appUserId,
-                        Email = (profile?.data?.ContainsKey("email") ?? false) ? profile.data["email"].ToString() : null,
-                        PhoneNumber = (profile?.data?.ContainsKey("phone_number") ?? false) ? profile.data["phone_number"].ToString() : null,
+                        Email = (profile?.Data?.ContainsKey("email") ?? false) ? profile.Data["email"].ToString() : null,
+                        PhoneNumber = (profile?.Data?.ContainsKey("phone_number") ?? false) ? profile.Data["phone_number"].ToString() : null,
                     };
                     var result = await _userManager.CreateAsync(user);
 
@@ -199,6 +205,12 @@ namespace Rownd.Helpers
                 new ClaimsPrincipal(identity),
                 authProperties
             );
+
+            try {
+                await OnSuccessfulSignIn(profile, user, signInContext);
+            } catch (Exception e) {
+                _logger.LogDebug($"Post-sign-in hook failed for user: {appUserId} . Reason: {e.Message} {e.StackTrace}");
+            }
 
             return Ok(response);
         }

@@ -83,12 +83,22 @@ namespace MyAppNamespace.Controllers
     public class RowndAuthController : RowndCookieExchange
     {
         // OPTIONAL
-        protected override async Task IsAllowedToSignIn(RowndUser rowndUser) {
+        protected override async Task IsAllowedToSignIn(RowndUser rowndUser, Dictionary<string, dynamic> signInContext) {
             // Run any custom logic here to ensure this user should be allowed to sign in.
+
+            // Use `signInContext` to store data you may want to use in a later phase (e.g. OnSignInSuccess())
 
             // return; // if everything is fine
 
             // throw new Exception("You aren't allowed here!"); // if you want to prevent the user from signing in
+        }
+
+        protected virtual async Task OnSuccessfulSignIn(RowndUser? rowndUser, IdentityUser? user, Dictionary<string, dynamic> signInContext) {
+            // Run any custom logic here after a successful sign in.
+
+            // Use `signInContext` to access data you stored during IsAllowedToSignIn()
+
+            // IdentityUser `user` may be null if the user was not found in the database or if a `UserManager` instance was not provided.
         }
 
         public RowndAuthController(RowndClient client, ILogger<RowndAuthController> logger, UserManager<IdentityUser> userManager) : base(client, logger)
