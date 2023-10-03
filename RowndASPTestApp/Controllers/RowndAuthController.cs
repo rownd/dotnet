@@ -32,8 +32,9 @@ namespace RowndASPTestApp.Controllers
             return sb.ToString();
         }
 
-        protected override async Task IsAllowedToSignIn(RowndUser rowndUser)
+        protected override async Task IsAllowedToSignIn(RowndUserProfile rowndUser, Dictionary<string, dynamic> signInContext)
         {
+            signInContext["foo"] = "bar";
             //string? userId = rowndUser?.data?["user_id"].ToString();
 
             //var handler = new HttpClientHandler();
@@ -80,6 +81,14 @@ namespace RowndASPTestApp.Controllers
             //}
 
             // throw new NotImplementedException("You have not purchased the product yet.");
+        }
+
+        protected override async Task OnSuccessfulSignIn(RowndUserProfile? rowndUser, IdentityUser? user, Dictionary<string, dynamic> signInContext)
+        {
+            if (signInContext["foo"] != "bar")
+            {
+                throw new Exception("Sign in context missing required value");
+            }
         }
 
         public RowndAuthController(RowndClient client, ILogger<RowndAuthController> logger, UserManager<IdentityUser> userManager) : base(client, logger)

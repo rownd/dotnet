@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
 		<PackageId>Rownd</PackageId>
-		<PackageVersion>1.1.0</PackageVersion>
+		<PackageVersion>2.0.0</PackageVersion>
 		<Title>Rownd</Title>
 		<Description>Integrate simple, frictionless authentication into your ASP.NET app.</Description>
 		<Authors>Matt Hamann</Authors>
@@ -22,12 +22,13 @@
 		<PackageReference Include="IdentityModel" Version="6.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="6.0.3" />
 		<PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="6.16.0" />
+		<PackageReference Include="Polly.Core" Version="8.0.0" />
 		<PackageReference Include="ScottBrady.IdentityModel" Version="1.4.0" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.16.0" />
 	</ItemGroup>
 	<ItemGroup>
 	  <None Remove="assets\" />
-	  <None Include="assets/rownd-icon.png" Pack="true" PackagePath="assets"/>
+	  <None Include="assets/rownd-icon.png" Pack="true" PackagePath="assets" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="assets\" />

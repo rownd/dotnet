@@ -22,7 +22,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddSingleton<Config>(sp => {
-    return new Config(builder.Configuration["Rownd:AppKey"], builder.Configuration["Rownd:AppSecret"]);
+    var config = new Config(builder.Configuration["Rownd:AppKey"], builder.Configuration["Rownd:AppSecret"]);
+    config.IsDebugModeEnabled = true;
+    return config;
 });
 builder.Services.AddSingleton<RowndClient>();
 

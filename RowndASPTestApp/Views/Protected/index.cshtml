@@ -1,4 +1,6 @@
-﻿@using Microsoft.AspNetCore.Identity
+﻿@model RowndASPTestApp.Models.RowndUserProfile
+
+@using Microsoft.AspNetCore.Identity
 @{
     ViewData["Title"] = "Protected page";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -7,4 +9,12 @@
 <div>
     <p>This page is protected by Rownd!</p>
     <p>Your roles: @ViewBag.Roles</p>
+</div>
+
+<div>
+    <form asp-action="UpdateUser">
+        <p>Update your name</p>
+        <input asp-for="Name" type="text" name="name" />
+        <button type="submit">Save</button>
+    </form>
 </div>
