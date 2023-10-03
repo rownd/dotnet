@@ -3,7 +3,7 @@
 Use this library to integrate Rownd into your .NET Core web application.
 
 Convenience wrappers are provided for the .NET Core Identity framework, but
-you can also leverage token validation and 
+you can also leverage token validation and user profile APIs.
 
 ## Installation
 
