@@ -144,4 +144,39 @@ Finally, we need to install the Rownd Hub and instruct it to call our controller
 
 That's it! At this point, you should be able to fire up your app in a browser, sign in with Rownd, and navigate around your app.
 
-If you run into issues, please [let us know!](https://github.com/rownd/dotnet/issues/new)
+## Rownd .NET API
+
+### Auth APIs
+
+**Rownd.Auth.ValidateToken(token)**<br />`public async Task<JwtSecurityToken> ValidateToken(string token)`
+
+Provides ad-hoc Rownd token validation. Pass in a Rownd JWT to find out whether it's valid or not. Typically, all of this is handled for you as part of the request lifecycle and you can get everything you need from the `User` principal that's present in each request.
+
+### User APIs
+
+**Rownd.Users.GetProfile(userId)**<br />`public async Task<RowndUserProfile> GetProfile(string userId, bool forceRefresh = false)`
+
+Retrieves the profile for the user matching `userId` or throws if none is found. If the profile is fetched from the server, it will be cached for up to one minute in the server's memory, so subsequent calls within the same or closely-timed requests will not incur the additional latency of unnecessary network traffic.
+
+If you need to override this behavior and force a refresh from the server, pass `true` to the second argument.
+
+While you should look at the .NET interface for `RowndUserProfile`, the shape generally looks something like this:
+
+```C#
+string Id;
+Dictionary<string, dynamic> Data;
+```
+
+The `Data` field will match the shape of the user profile "data types" as defined in the [Rownd platform](https://app.rownd.io/data/297860819392135684/types). Since we don't know exactly what types those values are at compile time, we leave it to you--the developer--to be aware of this and handle casting values to the appropriate type (e.g., `userProfile.Data["first_name"]?.ToString()`.
+
+<hr />
+
+**Rownd.Users.UpdateProfile(userProfile)**<br />`public async Task<RowndUserProfile> UpdateProfile(RowndUserProfile userProfile)`
+
+Saves the given profile back to Rownd via its API. The in-memory cache of this user is also updated and the cache expiration for that entry is reset.
+
+Typically, you'll retrieve the user's profile, update a field (e.g., `userProfile.Data["first_name"] = "Bob"`), and then persist the changes back to the server via `UpdateProfile()`. Changes made here will overwrite the server's copy.
+
+<hr />
+
+If you run into issues with this SDK, please [let us know!](https://github.com/rownd/dotnet/issues/new)
