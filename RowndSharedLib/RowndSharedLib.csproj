@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
 		<PackageId>Rownd</PackageId>
-		<PackageVersion>2.0.0</PackageVersion>
+		<PackageVersion>2.1.0</PackageVersion>
 		<Title>Rownd</Title>
 		<Description>Integrate simple, frictionless authentication into your ASP.NET app.</Description>
 		<Authors>Matt Hamann</Authors>
@@ -11,6 +11,7 @@
 		<RepositoryUrl>https://github.com/rownd/dotnet</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>assets\rownd-icon.png</PackageIcon>
 		<IsPackable>true</IsPackable>
 		<TargetFramework>net6.0</TargetFramework>
