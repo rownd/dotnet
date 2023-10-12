@@ -1,0 +1,33 @@
+{
+    "npm": false,
+    "git": {
+      "commitMessage": "chore: release v${version}",
+      "tagName": "${version}"
+    },
+    "github": {
+      "release": true
+    },
+    "plugins": {
+      "@release-it/conventional-changelog": {
+        "preset": "angular",
+        "infile": "CHANGELOG.md"
+      },
+      "@release-it/bumper": {
+        "in": "VERSION",
+        "out": [
+          "RowndSharedLib.csproj",
+          "README.md",
+          "VERSION"
+        ]
+      }
+    },
+    "hooks": {
+      "after:bump": [
+        "mkdir -p pack",
+        "dotnet pack --configuration Release -o ./pack"
+      ],
+      "after:github:release": [
+        "nuget push ./pack/Rownd.${version}.nupkg -src https://nuget.org"
+      ]
+    }
+  }
