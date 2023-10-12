@@ -9,9 +9,9 @@ namespace Rownd.Models {
         }
 
         [JsonPropertyName("data")]
-        public Dictionary<string, dynamic>? Data { get; set; }
+        public Dictionary<string, dynamic>? Data { get; set; } = new Dictionary<string, dynamic>();
 
         [JsonPropertyName("meta")]
-        public Dictionary<string, dynamic>? Meta { get; set; }
+        public Dictionary<string, dynamic>? Meta { get; set; } = new Dictionary<string, dynamic>();
     }
 }
