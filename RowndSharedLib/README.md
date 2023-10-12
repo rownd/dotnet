@@ -164,6 +164,27 @@ Provides ad-hoc Rownd token validation. Pass in a Rownd JWT to find out whether 
 
 ### User APIs
 
+**Rownd.Users.ListProfiles(opts)**<br />`public async Task<ResultSet<RowndUserProfile>> ListProfiles(UserLookupOpts opts)`
+
+Retrieves a list of user profiles matching the given criteria. The `UserLookupOpts` object is a simple class with the following properties:
+
+```C#
+public class UserLookupOpts {
+    public string[]? UserLookupCriteria { get; set; }
+
+    public string[]? UserIds { get; set; }
+}
+```
+
+- `UserLookupCriteria` is an array of strings representing identifiers that may match one or more users.
+   For example, providing an array with the elements `juliet@rose.com` and `+19875551212` might return
+   a list of two users at most. It might return one or zero depending on whether those identifiers match
+   any users. Note that only exact matches are supported. Phone numbers _must_ be in E.164 format.
+- `UserIds` is an array of strings representing Rownd user IDs. Providing this array will return a list of
+   users matching those IDs. Any IDs that do not match existing users will be ignored.
+
+<hr />
+
 **Rownd.Users.GetProfile(userId)**<br />`public async Task<RowndUserProfile> GetProfile(string userId, bool forceRefresh = false)`
 
 Retrieves the profile for the user matching `userId` or throws if none is found. If the profile is fetched from the server, it will be cached for up to one minute in the server's memory, so subsequent calls within the same or closely-timed requests will not incur the additional latency of unnecessary network traffic.
@@ -175,6 +196,7 @@ While you should look at the .NET interface for `RowndUserProfile`, the shape ge
 ```C#
 string Id;
 Dictionary<string, dynamic> Data;
+Dictionary<string, dynamic> Meta;
 ```
 
 The `Data` field will match the shape of the user profile "data types" as defined in the [Rownd platform](https://app.rownd.io/data/297860819392135684/types). Since we don't know exactly what types those values are at compile time, we leave it to you--the developer--to be aware of this and handle casting values to the appropriate type (e.g., `userProfile.Data["first_name"]?.ToString()`.
@@ -186,6 +208,11 @@ The `Data` field will match the shape of the user profile "data types" as define
 Saves the given profile back to Rownd via its API. The in-memory cache of this user is also updated and the cache expiration for that entry is reset.
 
 Typically, you'll retrieve the user's profile, update a field (e.g., `userProfile.Data["first_name"] = "Bob"`), and then persist the changes back to the server via `UpdateProfile()`. Changes made here will overwrite the server's copy.
+
+<hr />
+
+**Rownd.Users.DeleteProfile(userId)**<br />`public async Task DeleteProfile(string userId)`
+Deletes the user profile matching `userId` from Rownd. If this user exists within the in-memory cache, it will be removed.
 
 <hr />
 
